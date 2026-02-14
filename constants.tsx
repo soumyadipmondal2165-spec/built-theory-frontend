@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PDFTool } from './types';
 
-export const API_URL = "https://built-theory-api.onrender.com";
+export const API_URL = "https://built-theory-frontend.onrender.com/";
 
 export const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAZvTrFE81bYQ2R7JxQZnV3x6tmh_j6yL0",
