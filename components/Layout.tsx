@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FileStack, Menu, X, ShieldCheck, Heart, User, LogOut, Crown } from 'lucide-react';
 import { PRICING } from '../constants';
@@ -155,7 +154,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const handleUpgrade = (plan: string) => {
     if (!user) {
-
+      alert('Please login with your Google account before payment.');
+      void handleLogin();
       return;
     }
 
@@ -207,7 +207,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     )}
                     <span className="text-xs font-bold text-gray-700">{user.name}</span>
                   </div>
-
+                  <button onClick={() => void handleLogout()} className="text-gray-400 hover:text-red-600 transition-colors"><LogOut size={18} /></button>
+                </div>
+              ) : (
+                <button onClick={() => void handleLogin()} className="text-[11px] font-black text-gray-900 hover:text-red-600 uppercase tracking-widest" disabled={!authReady}>
+                  {authReady ? 'Google Login' : 'Loading Auth...'}
+                </button>
               )}
               {!user?.isPro && (
                 <button onClick={() => setShowPricing(true)} className="px-5 py-2.5 text-[10px] font-black text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all uppercase tracking-widest">
