@@ -16,7 +16,8 @@
     "pdf-lib": "^1.17.1",
     "react-router-dom": "^7.13.0",
     "pptxgenjs": "^3.12.0",
-    "signature_pad": "^5.0.4"
+    "signature_pad": "^5.0.4",
+    "pdfjs-dist": "4.0.379"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
