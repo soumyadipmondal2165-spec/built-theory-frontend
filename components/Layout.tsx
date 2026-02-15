@@ -1,17 +1,31 @@
-
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { FileStack, Menu, X, ShieldCheck, Heart, User, LogOut, Crown } from 'lucide-react';
 import { PRICING } from '../constants';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+const decodeJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(window.atob(base64))));
+  } catch {
+    return null;
+  }
+};
+
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [user, setUser] = React.useState<{ name: string; email: string; isPro: boolean } | null>(
+  const [user, setUser] = React.useState<{ name: string; email: string; isPro: boolean; picture?: string } | null>(
     localStorage.getItem('bt_user') ? JSON.parse(localStorage.getItem('bt_user')!) : null
   );
   const [showPricing, setShowPricing] = React.useState(false);
 
-  // Sync pro status if updated elsewhere
   useEffect(() => {
     const checkPro = () => {
       if (user && localStorage.getItem('bt_pro') === 'true' && !user.isPro) {
@@ -28,16 +42,48 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     };
   }, [user]);
 
-  const handleLogin = () => {
-    // In a real app, this would trigger window.aistudio.openSelectKey() or Firebase Auth
-    const mockUser = { 
-      name: "Civil Engineer", 
-      email: "engineer@built-theory.com", 
-      isPro: localStorage.getItem('bt_pro') === 'true' 
+  const handleGoogleCredential = useCallback((response: { credential?: string }) => {
+    if (!response?.credential) {
+      alert('Google login failed. Please try again.');
+      return;
+    }
+
+    const payload = decodeJwt(response.credential);
+    if (!payload?.email) {
+      alert('Unable to read Google profile details.');
+      return;
+    }
+
+    const signedInUser = {
+      name: payload.name || payload.email,
+      email: payload.email,
+      picture: payload.picture,
+      isPro: localStorage.getItem('bt_pro') === 'true'
     };
-    setUser(mockUser);
-    localStorage.setItem('bt_user', JSON.stringify(mockUser));
-  };
+
+    setUser(signedInUser);
+    localStorage.setItem('bt_user', JSON.stringify(signedInUser));
+  }, []);
+
+  const handleLogin = useCallback(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      alert('Google login is not configured. Set VITE_GOOGLE_CLIENT_ID in your environment.');
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      alert('Google Identity script did not load. Please refresh and try again.');
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredential
+    });
+
+    window.google.accounts.id.prompt();
+  }, [handleGoogleCredential]);
 
   const handleLogout = () => {
     setUser(null);
@@ -47,19 +93,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   const handleUpgrade = (plan: string) => {
-    // MANDATORY: Check for user login before payment
     if (!user) {
-      alert("Please login with your account before proceeding to payment.");
+      alert('Please login with your Google account before proceeding to payment.');
       handleLogin();
       return;
     }
 
     const options = {
-      key: "rzp_live_SDvXBbpBeVUe5U",
+      key: 'rzp_live_SDvXBbpBeVUe5U',
       amount: plan === 'yearly' ? PRICING.yearly * 100 : plan === 'monthly' ? PRICING.monthly * 100 : PRICING.weekly * 100,
-      name: "Built-Theory Pro",
+      name: 'Built-Theory Pro',
       description: `Unlock all Premium Tools (${plan})`,
-      handler: (response: any) => {
+      handler: () => {
         localStorage.setItem('bt_pro', 'true');
         if (user) {
           const updated = { ...user, isPro: true };
@@ -67,11 +112,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           localStorage.setItem('bt_user', JSON.stringify(updated));
         }
         setShowPricing(false);
-        alert("Payment Successful! All Pro features are now unlocked.");
+        alert('Payment Successful! All Pro features are now unlocked.');
       },
-      theme: { color: "#e33b2f" }
+      theme: { color: '#e33b2f' }
     };
-    const rzp = (window as any).Razorpay ? new (window as any).Razorpay(options) : { open: () => alert("Razorpay script not loaded.") };
+    const rzp = (window as any).Razorpay ? new (window as any).Razorpay(options) : { open: () => alert('Razorpay script not loaded.') };
     rzp.open();
   };
 
@@ -94,15 +139,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               {user ? (
                 <div className="flex items-center gap-4">
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${user.isPro ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-100'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${user.isPro ? 'bg-yellow-400 text-white' : 'bg-red-100 text-red-600'}`}>
-                      {user.isPro ? <Crown size={14}/> : <User size={14}/>}
-                    </div>
+                    {user.picture ? (
+                      <img src={user.picture} className="w-6 h-6 rounded-full object-cover" alt={user.name} />
+                    ) : (
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${user.isPro ? 'bg-yellow-400 text-white' : 'bg-red-100 text-red-600'}`}>
+                        {user.isPro ? <Crown size={14} /> : <User size={14} />}
+                      </div>
+                    )}
                     <span className="text-xs font-bold text-gray-700">{user.name}</span>
                   </div>
-                  <button onClick={handleLogout} className="text-gray-400 hover:text-red-600 transition-colors"><LogOut size={18}/></button>
+                  <button onClick={handleLogout} className="text-gray-400 hover:text-red-600 transition-colors"><LogOut size={18} /></button>
                 </div>
               ) : (
-                <button onClick={handleLogin} className="text-[11px] font-black text-gray-900 hover:text-red-600 uppercase tracking-widest">Login</button>
+                <button onClick={handleLogin} className="text-[11px] font-black text-gray-900 hover:text-red-600 uppercase tracking-widest">Google Login</button>
               )}
               {!user?.isPro && (
                 <button onClick={() => setShowPricing(true)} className="px-5 py-2.5 text-[10px] font-black text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-100 transition-all uppercase tracking-widest">
@@ -118,9 +167,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
       </header>
 
-      <main className="flex-grow">
-        {children}
-      </main>
+      <main className="flex-grow">{children}</main>
 
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">

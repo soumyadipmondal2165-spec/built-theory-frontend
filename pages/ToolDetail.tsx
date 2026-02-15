@@ -20,7 +20,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.0.379/buil
 
 export const ToolDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const tool = TOOLS.find(t => t.id === id);
+  const activeToolId = id || 'merge';
+  const tool = TOOLS.find(t => t.id === activeToolId);
   const navigate = useNavigate();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +29,8 @@ export const ToolDetail: React.FC = () => {
   if (!tool) return <div className="p-20 text-center text-gray-500 font-bold">Tool not found.</div>;
 
   const IconComponent = ICON_MAP[tool.icon];
+  const implementedTools = new Set(['merge', 'split', 'extract-pages', 'organize', 'remove-pages', 'rotate', 'compress', 'watermark', 'protect', 'unlock', 'jpg-to-pdf']);
+  const isImplementedTool = implementedTools.has(activeToolId);
 
   // Global State
   const [user] = useState({ isPro: localStorage.getItem('bt_pro') === 'true' });
@@ -55,7 +58,7 @@ export const ToolDetail: React.FC = () => {
 
   // Helper to determine accepted file types based on tool
   const getAccept = useCallback(() => {
-    switch (id) {
+    switch (activeToolId) {
       case 'jpg-to-pdf': return '.jpg,.jpeg'; // STRICT: Only JPG per instruction
       case 'word-to-pdf': return '.doc,.docx';
       case 'ppt-to-pdf': return '.ppt,.pptx'; // STRICT: Only PPT per instruction
@@ -63,7 +66,7 @@ export const ToolDetail: React.FC = () => {
       case 'html-to-pdf': return '.html,.htm';
       default: return 'application/pdf';
     }
-  }, [id]);
+  }, [activeToolId]);
 
   // Load PDF Thumbnails for Organization/Split tools
   const loadThumbnails = useCallback(async (file: File) => {
@@ -95,10 +98,10 @@ export const ToolDetail: React.FC = () => {
   }, [user.isPro]);
 
   useEffect(() => {
-    if (files.length === 1 && (id === 'split' || id === 'organize' || id === 'remove-pages' || id === 'rotate')) {
+    if (files.length === 1 && (activeToolId === 'split' || activeToolId === 'extract-pages' || activeToolId === 'organize' || activeToolId === 'remove-pages' || activeToolId === 'rotate')) {
       loadThumbnails(files[0]);
     }
-  }, [files, id, loadThumbnails]);
+  }, [files, activeToolId, loadThumbnails]);
 
   const validateFiles = (loaded: File[]) => {
     const combinedSize = [...files, ...loaded].reduce((a, b) => a + b.size, 0);
@@ -147,7 +150,7 @@ export const ToolDetail: React.FC = () => {
 
     if (!validateFiles(loaded)) return;
 
-    if (id === 'merge' || id === 'jpg-to-pdf') {
+    if (activeToolId === 'merge' || activeToolId === 'jpg-to-pdf') {
       setFiles(prev => [...prev, ...loaded]);
     } else {
       setFiles(loaded.slice(0, 1));
@@ -162,19 +165,29 @@ export const ToolDetail: React.FC = () => {
       return;
     }
 
+    if (!isImplementedTool) {
+      setError('This tool is currently in advanced development. Please use one of the production-ready tools.');
+      return;
+    }
+
     setIsProcessing(true);
     setProgress(20);
     setError(null);
 
     try {
       let output: Uint8Array | null = null;
-      switch (id) {
+      switch (activeToolId) {
         case 'merge': 
           output = await mergePDFs(files); 
           break;
-        case 'split': 
-          const splitted = await splitPDFCustom(files[0], ranges, mergeRanges);
-          output = splitted[0];
+        case 'split':
+          output = (await splitPDFCustom(files[0], ranges, mergeRanges))[0];
+          break;
+        case 'extract-pages':
+          if (selectedPages.length === 0) {
+            throw new Error('Select one or more pages to extract.');
+          }
+          output = await organizePDF(files[0], pageOrder.filter((_, i) => selectedPages.includes(i)));
           break;
         case 'organize':
         case 'remove-pages':
@@ -200,7 +213,7 @@ export const ToolDetail: React.FC = () => {
           output = await imagesToPDF(files);
           break;
         default:
-          output = await mergePDFs(files);
+          throw new Error('This tool workflow is not available yet.');
       }
       
       if (output) {
@@ -250,6 +263,11 @@ export const ToolDetail: React.FC = () => {
                 </div>
                 <h1 className="text-6xl font-black text-gray-900 mb-4 tracking-tighter uppercase leading-none">{tool.name}</h1>
                 <p className="text-gray-500 text-xl font-medium max-w-lg mx-auto leading-relaxed">{tool.description}</p>
+                {!isImplementedTool && (
+                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">
+                    <Info size={14} /> Advanced engine for this tool is in progress.
+                  </div>
+                )}
              </div>
 
              <div 
@@ -263,7 +281,7 @@ export const ToolDetail: React.FC = () => {
                   <Upload size={64} />
                 </div>
                 <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">
-                  {isDragging ? 'Drop Files Now' : `Select ${id.split('-')[0].toUpperCase()} files`}
+                  {isDragging ? 'Drop Files Now' : `Select ${activeToolId.split('-')[0].toUpperCase()} files`}
                 </h3>
                 <p className="text-gray-400 font-bold text-sm mt-2 uppercase tracking-widest">or drag & drop files here</p>
                 <div className="mt-4 px-4 py-1.5 bg-gray-100 rounded-full text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] border border-gray-200">
@@ -275,7 +293,7 @@ export const ToolDetail: React.FC = () => {
                   onChange={handleFileChange} 
                   accept={getAccept()} 
                   className="hidden" 
-                  multiple={id === 'merge' || id === 'jpg-to-pdf'} 
+                  multiple={activeToolId === 'merge' || activeToolId === 'jpg-to-pdf'} 
                 />
              </div>
 
@@ -296,7 +314,7 @@ export const ToolDetail: React.FC = () => {
                   <p className="text-xs font-black text-gray-400 mt-2 uppercase tracking-widest">Processing {files.length} document(s)</p>
                </div>
                <div className="flex gap-4">
-                 {(id === 'merge' || id === 'jpg-to-pdf') && (
+                 {(activeToolId === 'merge' || activeToolId === 'jpg-to-pdf') && (
                     <button 
                       onClick={() => fileInputRef.current?.click()} 
                       className="px-6 py-3 bg-white border-2 border-gray-100 rounded-2xl text-gray-900 font-black text-[10px] uppercase tracking-widest hover:border-red-600 transition-all shadow-sm flex items-center gap-2"
@@ -311,7 +329,7 @@ export const ToolDetail: React.FC = () => {
             </div>
 
             {/* Grid for Organization / Split / Multi-File */}
-            {(id === 'organize' || id === 'split' || id === 'remove-pages' || id === 'rotate' || id === 'merge' || id === 'jpg-to-pdf') ? (
+            {(activeToolId === 'organize' || activeToolId === 'split' || activeToolId === 'extract-pages' || activeToolId === 'remove-pages' || activeToolId === 'rotate' || activeToolId === 'merge' || activeToolId === 'jpg-to-pdf') ? (
                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                   {/* If we have thumbnails, show pages. Else show file icons. */}
                   {thumbnails.length > 0 ? (
@@ -319,7 +337,7 @@ export const ToolDetail: React.FC = () => {
                       <div 
                         key={idx}
                         onClick={() => {
-                          if (id === 'remove-pages' || id === 'organize') {
+                          if (activeToolId === 'remove-pages' || activeToolId === 'organize' || activeToolId === 'extract-pages') {
                             setSelectedPages(prev => prev.includes(idx) ? prev.filter(p => p !== idx) : [...prev, idx]);
                           }
                         }}
@@ -440,7 +458,7 @@ export const ToolDetail: React.FC = () => {
               </div>
 
               {/* Tool-specific configuration sections... */}
-              {id === 'split' && (
+              {(activeToolId === 'split' || activeToolId === 'extract-pages') && (
                 <div className="space-y-6">
                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Select Ranges</p>
                    {ranges.map((range, idx) => (
@@ -474,7 +492,7 @@ export const ToolDetail: React.FC = () => {
                 </div>
               )}
 
-              {id === 'watermark' && (
+              {activeToolId === 'watermark' && (
                 <div className="space-y-8">
                    <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-3">Watermark Text</label>
@@ -506,7 +524,7 @@ export const ToolDetail: React.FC = () => {
                 </div>
               )}
 
-              {id === 'compress' && (
+              {activeToolId === 'compress' && (
                 <div className="space-y-4">
                    {[
                     { id: 'extreme', name: 'Extreme', desc: 'Less quality, high compression', icon: Zap },
@@ -528,11 +546,11 @@ export const ToolDetail: React.FC = () => {
                 </div>
               )}
 
-              {(id === 'protect' || id === 'unlock') && (
+              {(activeToolId === 'protect' || activeToolId === 'unlock') && (
                 <div className="bg-red-50 p-6 rounded-[32px] border border-red-100">
                    <div className="flex items-center gap-3 mb-6">
                       <KeyRound className="text-red-600" size={20}/>
-                      <span className="text-[11px] font-black text-red-600 uppercase tracking-widest">{id === 'protect' ? 'Set Encryption Key' : 'Document Password'}</span>
+                      <span className="text-[11px] font-black text-red-600 uppercase tracking-widest">{activeToolId === 'protect' ? 'Set Encryption Key' : 'Document Password'}</span>
                    </div>
                    <input 
                     type="password" 
