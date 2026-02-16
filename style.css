@@ -100,3 +100,18 @@ header{
     font-size: 0.9rem;
     margin-top: 5px;
 }
+
+nav {
+    display: flex; /* Aligns items in a row */
+    justify-content: space-between; /* Pushes logo to left and buttons to right */
+    align-items: center;
+    padding: 10px 5%;
+    background: white;
+    box-shadow: var(--shadow); /* Adds the professional shadow */
+}
+
+.user-profile {
+    display: flex;
+    gap: 12px; /* Adds space between Avatar, Logout, and Go Pro */
+    align-items: center;
+}
