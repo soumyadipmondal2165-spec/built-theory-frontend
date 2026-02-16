@@ -1,241 +1,45 @@
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Built-Theory | Premium PDF & Academic Suite</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/downloadjs@1.4.7/download.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Built-Theory PDF | Professional PDF Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8988017666847513" crossorigin="anonymous"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-
-    <div id="processingOverlay" class="processingOverlay" style="display:none;">
-        <div class="spinner-container"><div class="spinner-main"></div></div>
-        <div class="processing-text">Built-Theory is working...</div>
-        <div class="processing-subtext">Processing large files may take a moment. Do not refresh.</div>
-    </div>
-
-    <nav>
-        <a href="/" class="logo">Built-Theory<span>PRO</span></a>
-        <div class="nav-links">
-            <span onclick="document.getElementById('tools').scrollIntoView()">All Tools</span>
-            <span id="navJoinPro" onclick="showPremiumModal()" style="color:var(--primary); font-weight:700; cursor:pointer;">JOIN PRO</span>
-        </div>
-        
-        <div id="authSection">
-            <button class="btn-login" onclick="loginWithGoogle()">Login</button>
-        </div>
-        
-        <div class="user-profile" id="userProfile" style="display:none;">
-            <div class="premium-badge" id="premiumBadge" style="display:none;">PRO</div>
-            <img id="userAvatar" class="user-avatar" src="" style="width:35px; border-radius:50%;">
-            <button class="btn-login" onclick="logout()" style="background:#f0f0f0; color:#333; margin-left:10px;">Logout</button>
-            <button class="btn-login" id="upgradeBtn" onclick="showPremiumModal()" style="background:#FFD700; color:#000; margin-left:10px;">Go Pro</button>
-        </div>
-    </nav>
-
-    <div class="hero">
-        <h1>Advanced Engineering PDF Tools</h1>
-        <p>10GB file limits and AI Academic tools for Pro members.</p>
-        <div style="margin-top:25px; display:flex; gap:15px; justify-content:center;">
-            <button class="primary-btn" onclick="document.getElementById('tools').scrollIntoView()">Get Started</button>
-            <button class="primary-btn" id="heroJoinPro" style="background:var(--dark);" onclick="showPremiumModal()">Explore Pro Plans</button>
-        </div>
-    </div>
-
-    <div class="container" id="tools">
-        <div class="category-section">
-            <div class="category-title"><i class="fas fa-graduation-cap"></i> Academic Tools</div>
-            <div class="tools-grid">
-                <div class="tool-card" onclick="openTool('ppt_gen')">
-                    <div class="tool-icon"><i class="fas fa-file-powerpoint"></i></div>
-                    <h3>Topic to PPT</h3>
-                    <p>Free: 5/mo | Pro: Unlimited</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-title"><i class="fas fa-shield-alt"></i> Security (PRO)</div>
-            <div class="tools-grid">
-                <div class="tool-card" onclick="openTool('unlock')">
-                    <div class="tool-icon"><i class="fas fa-unlock"></i></div>
-                    <h3>Unlock PDF</h3>
-                    <p>PRO Only Tool</p>
-                </div>
-                <div class="tool-card" onclick="openTool('protect')">
-                    <div class="tool-icon"><i class="fas fa-user-lock"></i></div>
-                    <h3>Protect PDF</h3>
-                    <p>PRO Only Tool</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="workspace" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:500; flex-direction:column; align-items:center; justify-content:center;">
-        <div class="workspace-header" style="padding:20px; width:100%; display:flex; justify-content:space-between;">
-            <div class="logo">Built-Theory Workspace</div>
-            <i class="fas fa-times" onclick="closeWorkspace()" style="cursor:pointer; font-size:1.5rem;"></i>
-        </div>
-        <div class="upload-box" id="dropArea" onclick="document.getElementById('fileInput').click()">
-            <input type="file" id="fileInput" multiple style="display:none;">
-            <i class="fas fa-cloud-upload-alt" style="font-size:3rem; color:var(--primary);"></i>
-            <h3>Select Files</h3>
-            <p id="limitInfo">Limit: 50MB</p>
-        </div>
-        <div id="pptForm" style="display:none; width:80%; max-width:500px; margin-top:20px;">
-            <input type="text" id="pptTopic" placeholder="Topic Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-            <textarea id="pptDetails" placeholder="Details..." style="width:100%; padding:12px; height:100px; border-radius:8px; border:1px solid #ddd;"></textarea>
-        </div>
-        <button class="primary-btn" id="processBtn" style="display:none;" onclick="processFiles()">Run Tool</button>
-    </div>
-
-    <div id="premiumModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center;">
-        <div class="modal-content" style="background:white; padding:40px; border-radius:20px; text-align:center; width:90%; max-width:450px;">
-            <h2 style="color:var(--primary); margin-bottom:10px;">Join Built-Theory PRO</h2>
-            <p>Unlock 10GB limits & all advanced tools.</p>
-            <div style="display:grid; gap:12px; margin:25px 0;">
-                <button class="primary-btn" onclick="payPro(59)">Weekly Plan - ₹59</button>
-                <button class="primary-btn" onclick="payPro(199)">Monthly Plan - ₹199</button>
-                <button class="primary-btn" onclick="payPro(1999)" style="background:linear-gradient(45deg, #FFD700, #FFA500); color:black;">Yearly Plan - ₹1999</button>
-            </div>
-            <span onclick="document.getElementById('premiumModal').style.display='none'" style="cursor:pointer; color:#888;">Maybe Later</span>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZvTrFE81bYQ2R7JxQZnV3x6tmh_j6yL0",
-            authDomain: "built-theory-auth-439a4.firebaseapp.com",
-            projectId: "built-theory-auth-439a4",
-            storageBucket: "built-theory-auth-439a4.firebasestorage.app",
-            messagingSenderId: "621216043890",
-            appId: "1:621216043890:web:8446c3344595abc38e43eb"
-        };
-        const RAZORPAY_KEY = "rzp_live_SDvXBbpBeVUe5U";
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        let currentUser = null;
-        let isPremium = false;
-        let currentTool = '';
-        const PRO_ONLY = ['repair', 'pdf2jpg', 'pdf2word', 'pdf2ppt', 'pdf2excel', 'pdf2pdfa', 'pagenum', 'edit', 'unlock', 'protect'];
-
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('authSection').style.display = 'none';
-                document.getElementById('userProfile').style.display = 'flex';
-                document.getElementById('userAvatar').src = user.photoURL;
-                
-                const doc = await db.collection('users').doc(user.uid).get();
-                if (doc.exists && doc.data().isPremium) {
-                    isPremium = true;
-                    document.getElementById('premiumBadge').style.display = 'block';
-                    document.getElementById('upgradeBtn').style.display = 'none';
-                    document.getElementById('navJoinPro').style.display = 'none';
-                }
-            }
-        });
-
-        function openTool(tool) {
-            if (PRO_ONLY.includes(tool) && !isPremium) {
-                showPremiumModal();
-                return;
-            }
-            currentTool = tool;
-            document.getElementById('workspace').style.display = 'flex';
-            document.getElementById('limitInfo').innerText = isPremium ? "Limit: 10GB" : "Limit: 50MB";
-            document.getElementById('pptForm').style.display = (tool === 'ppt_gen') ? 'block' : 'none';
-        }
-
-        function closeWorkspace() { document.getElementById('workspace').style.display = 'none'; }
-        function showPremiumModal() { document.getElementById('premiumModal').style.display = 'flex'; }
-
-        function payPro(amount) {
-            if (!currentUser) { alert("Please login first!"); loginWithGoogle(); return; }
-
-            const options = {
-                "key": RAZORPAY_KEY,
-                "amount": amount * 100,
-                "currency": "INR",
-                "name": "Built-Theory PRO",
-                "handler": async function(response) {
-                    await db.collection('users').doc(currentUser.uid).update({
-                        isPremium: true,
-                        plan: amount,
-                        payId: response.razorpay_payment_id
-                    });
-                    
-                    // Send Email Receipt 
-                    fetch('/api/payment-success', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: currentUser.email, amount: amount })
-                    });
-
-                    alert("PRO Unlocked Successfully!");
-                    location.reload();
-                },
-                "prefill": { "email": currentUser.email },
-                "theme": { "color": "#ff4747" }
-            };
-            new Razorpay(options).open();
-        }
-
-        async function processFiles() {
-            const files = document.getElementById('fileInput').files;
-            const overlay = document.getElementById('processingOverlay');
-            
-            const totalSize = Array.from(files).reduce((acc, f) => acc + f.size, 0);
-            const limit = isPremium ? 10 * 1024 * 1024 * 1024 : 50 * 1024 * 1024;
-            
-            if (totalSize > limit) {
-                alert(`Size limit exceeded! Free: 50MB | PRO: 10GB`);
-                return;
-            }
-
-            overlay.style.display = 'flex';
-            const formData = new FormData();
-            
-            if (currentTool === 'merge' || currentTool === 'img2pdf') {
-                Array.from(files).forEach(f => formData.append('files', f));
-            } else if (currentTool === 'ppt_gen') {
-                formData.append('topic', document.getElementById('pptTopic').value);
-                formData.append('details', document.getElementById('pptDetails').value);
-            } else {
-                formData.append('file', files[0]);
-            }
-
-            try {
-                const res = await fetch(`https://built-theory-api.onrender.com/api/${currentTool}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const blob = await res.blob();
-                download(blob, `BuiltTheory_${currentTool}_Result.pdf`);
-            } catch (e) { alert("Server error. Please check Render logs."); }
-            finally { overlay.style.display = 'none'; }
-        }
-
-        function loginWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function logout() { auth.signOut().then(() => location.reload()); }
-
-        document.getElementById('fileInput').addEventListener('change', () => {
-            if(document.getElementById('fileInput').files.length > 0) 
-                document.getElementById('processBtn').style.display = 'block';
-        });
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+      .side-panel { transition: transform 0.3s ease; }
+      .page-thumbnail:hover .page-actions { opacity: 1; }
+      .page-actions { opacity: 0; transition: opacity 0.2s; }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "pdf-lib": "https://esm.sh/pdf-lib@^1.17.1",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+        "pptxgenjs": "https://esm.sh/pptxgenjs@^3.12.0",
+        "signature_pad": "https://esm.sh/signature_pad@^5.0.4",
+        "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.0.379"
+      }
+    }
     </script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
