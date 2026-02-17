@@ -1,20 +1,24 @@
-import img2pdf
 import os
-import fitz # PyMuPDF
+import subprocess
+import img2pdf
+import fitz  # PyMuPDF
 from pdf2docx import Converter
 from pptx import Presentation
 from services.helpers import unique_path
 
 def images_to_pdf(files):
-    """Converts images (JPG/PNG) into a single PDF."""
+    """Converts multiple JPG/PNG images into one PDF."""
     output_path = unique_path("BuiltTheory_Images.pdf")
+    # Convert file objects to bytes for img2pdf
+    image_bytes = [f.read() for f in files]
     with open(output_path, "wb") as f:
-        f.write(img2pdf.convert([f.read() for f in files]))
+        f.write(img2pdf.convert(image_bytes))
     return output_path
 
 def pdf_to_jpg(file):
-    """Converts a PDF page into a JPG image."""
+    """Converts PDF pages into high-quality JPG images."""
     doc = fitz.open(stream=file.read(), filetype="pdf")
+    # For simplicity, we convert the first page to a preview JPG
     output_path = unique_path("BuiltTheory_Preview.jpg")
     page = doc.load_page(0)
     pix = page.get_pixmap()
@@ -22,22 +26,44 @@ def pdf_to_jpg(file):
     return output_path
 
 def pdf_to_word(file):
-    """Converts PDF into an editable Word document."""
-    pdf_path = unique_path("temp.pdf")
-    docx_path = unique_path("BuiltTheory_Converted.docx")
+    """Converts PDF documents back into editable Word (.docx) files."""
+    pdf_path = unique_path("temp_convert.pdf")
+    docx_path = unique_path("BuiltTheory_Editable.docx")
     with open(pdf_path, "wb") as f:
         f.write(file.read())
+    
     cv = Converter(pdf_path)
     cv.convert(docx_path)
     cv.close()
     return docx_path
 
 def generate_pptx(topic, details):
-    """Generates a professional engineering PPT structure."""
+    """AI Academic Tool: Generates a professional PPT structure."""
     prs = Presentation()
-    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    title_slide_layout = prs.slide_layouts[0]
+    slide = prs.slides.add_slide(title_slide_layout)
     slide.shapes.title.text = topic
     slide.placeholders[1].text = details
-    output_path = unique_path("BuiltTheory_Presentation.pptx")
+    
+    output_path = unique_path("BuiltTheory_Academic_Slides.pptx")
     prs.save(output_path)
     return output_path
+
+def office_to_pdf(file, extension):
+    """
+    Uses LibreOffice to convert Word, Excel, or PPT to PDF.
+    This works because of the 'libreoffice' setting in your render.yaml.
+    """
+    input_path = unique_path(f"temp_input.{extension}")
+    with open(input_path, "wb") as f:
+        f.write(file.read())
+    
+    output_dir = os.path.dirname(input_path)
+    # Command to run LibreOffice in the background
+    subprocess.run([
+        'libreoffice', '--headless', '--convert-to', 'pdf', 
+        '--outdir', output_dir, input_path
+    ], check=True)
+    
+    # Return the path of the new PDF file
+    return input_path.rsplit('.', 1)[0] + ".pdf"
