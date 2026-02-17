@@ -6,23 +6,23 @@ from pptx import Presentation
 from services.helpers import unique_path
 
 def images_to_pdf(files):
-    """Converts a list of images (JPG/PNG) into a single PDF document."""
+    """Converts images (JPG/PNG) into a single PDF."""
     output_path = unique_path("BuiltTheory_Images.pdf")
     with open(output_path, "wb") as f:
         f.write(img2pdf.convert([f.read() for f in files]))
     return output_path
 
 def pdf_to_jpg(file):
-    """Converts PDF pages into high-quality JPG images."""
+    """Converts a PDF page into a JPG image."""
     doc = fitz.open(stream=file.read(), filetype="pdf")
-    output_path = unique_path("BuiltTheory_Page1.jpg")
+    output_path = unique_path("BuiltTheory_Preview.jpg")
     page = doc.load_page(0)
     pix = page.get_pixmap()
     pix.save(output_path)
     return output_path
 
 def pdf_to_word(file):
-    """Converts PDF documents back into editable Word (.docx) files."""
+    """Converts PDF into an editable Word document."""
     pdf_path = unique_path("temp.pdf")
     docx_path = unique_path("BuiltTheory_Converted.docx")
     with open(pdf_path, "wb") as f:
@@ -33,7 +33,7 @@ def pdf_to_word(file):
     return docx_path
 
 def generate_pptx(topic, details):
-    """AI-ready logic to generate a professional PPT structure."""
+    """Generates a professional engineering PPT structure."""
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[0])
     slide.shapes.title.text = topic
