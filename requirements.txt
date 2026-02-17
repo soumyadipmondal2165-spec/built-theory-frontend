@@ -15,4 +15,5 @@ redis
 pytesseract
 pandas
 openpyxl
+Flask-Mail==0.9.1
 reportlab
