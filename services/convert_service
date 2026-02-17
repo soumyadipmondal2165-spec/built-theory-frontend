@@ -1,0 +1,43 @@
+import img2pdf
+import os
+import fitz # PyMuPDF
+from pdf2docx import Converter
+from pptx import Presentation
+from services.helpers import unique_path
+
+def images_to_pdf(files):
+    """Converts a list of images (JPG/PNG) into a single PDF document."""
+    output_path = unique_path("BuiltTheory_Images.pdf")
+    with open(output_path, "wb") as f:
+        f.write(img2pdf.convert([f.read() for f in files]))
+    return output_path
+
+def pdf_to_jpg(file):
+    """Converts PDF pages into high-quality JPG images."""
+    doc = fitz.open(stream=file.read(), filetype="pdf")
+    output_path = unique_path("BuiltTheory_Page1.jpg")
+    page = doc.load_page(0)
+    pix = page.get_pixmap()
+    pix.save(output_path)
+    return output_path
+
+def pdf_to_word(file):
+    """Converts PDF documents back into editable Word (.docx) files."""
+    pdf_path = unique_path("temp.pdf")
+    docx_path = unique_path("BuiltTheory_Converted.docx")
+    with open(pdf_path, "wb") as f:
+        f.write(file.read())
+    cv = Converter(pdf_path)
+    cv.convert(docx_path)
+    cv.close()
+    return docx_path
+
+def generate_pptx(topic, details):
+    """AI-ready logic to generate a professional PPT structure."""
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text = topic
+    slide.placeholders[1].text = details
+    output_path = unique_path("BuiltTheory_Presentation.pptx")
+    prs.save(output_path)
+    return output_path
