@@ -43,15 +43,6 @@ def generate_pptx(topic, details):
     output_path = unique_path("BuiltTheory_Slides.pptx")
     prs.save(output_path)
     return output_path
-
-def office_to_pdf(file, extension):
-    """
-    Universal office converter using LibreOffice.
-    This fulfills the import required by your app.py.
-    """
-    input_path = unique_path(f"temp_input.{extension}")
-    with open(input_path, "wb") as f:
-        f.write(file.read())
     
     output_dir = os.path.dirname(input_path)
     # Headless command for Render servers
